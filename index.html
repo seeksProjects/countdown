@@ -109,36 +109,48 @@
       color: var(--label);
     }
 
-    /* Milestone overlay — sits ABOVE the countdown during its 7-day window */
+    /* Milestone overlay — a full-width white banner pinned to the top
+       during its 7-day window. */
     .milestone {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: clamp(4px, 1vw, 8px);
-      margin-bottom: clamp(18px, 5vw, 40px);
-      animation: milestone-in 0.6s ease-out both;
+      gap: clamp(2px, 0.8vw, 6px);
+      padding:
+        calc(max(12px, env(safe-area-inset-top)) + 6px)
+        16px
+        clamp(10px, 3vw, 16px);
+      background: rgba(244, 248, 255, 0.96);
+      box-shadow: 0 3px 22px rgba(0, 0, 0, 0.5);
+      animation: milestone-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
     }
     .milestone[hidden] { display: none; }
 
     .milestone-num {
       font-family: 'DSEG7', 'Courier New', monospace;
-      font-size: clamp(30px, 9vw, 72px);
+      font-size: clamp(28px, 8vw, 60px);
       line-height: 1;
       letter-spacing: 0.04em;
-      color: var(--digit);
-      text-shadow: 0 0 10px var(--digit-glow), 0 0 28px var(--digit-glow);
+      color: #2b6cff;
+      text-shadow: 0 0 10px rgba(43, 108, 255, 0.25);
     }
 
+    /* Caption — small, matching the "days used" caption. */
     .milestone-label {
       font-family: 'Courier New', monospace;
-      font-size: clamp(9px, 2vw, 13px);
-      letter-spacing: 0.35em;
+      font-size: clamp(8px, 2vw, 11px);
+      letter-spacing: 0.32em;
       text-transform: uppercase;
-      color: var(--label);
+      color: #5a7bb5;
     }
 
     @keyframes milestone-in {
-      from { opacity: 0; transform: translateY(-10px); }
+      from { opacity: 0; transform: translateY(-100%); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
@@ -264,12 +276,15 @@
 
       // Days used since the start of the year (clamped to the window).
       const used = Math.min(365, Math.max(0, Math.floor((now - START) / DAY)));
-      $usedDays.textContent = pad(used, 3);
+      $usedDays.textContent = String(used);
+      $usedDays.dataset.shadow = '8'.repeat(String(used).length); // ghost matches width
 
       // Milestone overlay: active while now is within a 7-day window (or in preview).
       const active = MILESTONES.find(m => now >= m && now < m + WEEK);
       if ((active !== undefined || PREVIEW) && diff > 0) {
-        $milestoneDays.textContent = pad(Math.ceil(diff / DAY), 3);
+        const left = Math.ceil(diff / DAY);
+        $milestoneDays.textContent = String(left);
+        $milestoneDays.dataset.shadow = '8'.repeat(String(left).length);
         $milestone.hidden = false;
       } else {
         $milestone.hidden = true;
