@@ -109,12 +109,83 @@
       color: var(--label);
     }
 
+    /* Milestone overlay — sits ABOVE the countdown during its 7-day window */
+    .milestone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(4px, 1vw, 8px);
+      margin-bottom: clamp(18px, 5vw, 40px);
+      animation: milestone-in 0.6s ease-out both;
+    }
+    .milestone[hidden] { display: none; }
+
+    .milestone-num {
+      font-family: 'DSEG7', 'Courier New', monospace;
+      font-size: clamp(30px, 9vw, 72px);
+      line-height: 1;
+      letter-spacing: 0.04em;
+      color: var(--digit);
+      text-shadow: 0 0 10px var(--digit-glow), 0 0 28px var(--digit-glow);
+    }
+
+    .milestone-label {
+      font-family: 'Courier New', monospace;
+      font-size: clamp(9px, 2vw, 13px);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--label);
+    }
+
+    @keyframes milestone-in {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tap-to-reveal "days used" — sits BELOW the countdown */
+    .used-toggle {
+      margin-top: clamp(22px, 6vw, 48px);
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.6em;
+      background: none;
+      border: 1px solid var(--dim);
+      border-radius: 999px;
+      padding: clamp(8px, 2.2vw, 12px) clamp(16px, 4vw, 24px);
+      color: var(--label);
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.25s ease;
+    }
+    .used-toggle:active { border-color: var(--digit-glow); }
+
+    .used-toggle .used-num {
+      font-family: 'DSEG7', 'Courier New', monospace;
+      font-size: clamp(18px, 5vw, 30px);
+      letter-spacing: 0.04em;
+      color: var(--digit);
+      text-shadow: 0 0 8px var(--digit-glow), 0 0 20px var(--digit-glow);
+    }
+    .used-toggle .used-text {
+      font-size: clamp(10px, 2.4vw, 14px);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+    /* Collapsed: number hidden; tap reveals it */
+    .used-toggle:not(.open) .used-num { display: none; }
+
     @media (orientation: portrait) and (max-width: 520px) {
       .countdown { grid-template-columns: repeat(2, auto); }
     }
   </style>
 </head>
 <body>
+  <div class="milestone" id="milestone" hidden aria-live="polite">
+    <span class="milestone-num" id="milestoneDays" data-shadow="888">000</span>
+    <span class="milestone-label">Days Left</span>
+  </div>
+
   <main class="countdown" aria-label="Countdown to June 8, 2027">
     <div class="unit">
       <div class="digits" id="days" data-shadow="888">000</div>
@@ -133,10 +204,17 @@
       <div class="label">Seconds</div>
     </div>
   </main>
+
+  <button class="used-toggle" id="usedToggle" type="button" aria-expanded="false">
+    <span class="used-num" id="usedDays" data-shadow="888">000</span>
+    <span class="used-text">Days Used</span>
+  </button>
+
   <div class="footer">TARGET &middot; 2027-06-08 00:00 LOCAL</div>
 
   <script>
-    // Target: June 8, 2027 at LOCAL midnight (no trailing Z = local time).
+    // The "year of life" window — LOCAL midnight (no trailing Z = local time).
+    const START  = new Date('2026-06-08T00:00:00').getTime();
     const TARGET = new Date('2027-06-08T00:00:00').getTime();
 
     const DAY  = 86_400_000;
@@ -144,15 +222,43 @@
     const MIN  = 60_000;
     const SEC  = 1_000;
 
+    // Quarter milestones: each opens a 7-day overlay showing days remaining.
+    // 3 months used -> 9 left, 6 -> 6, 9 -> 3.
+    const WEEK = 7 * DAY;
+    const MILESTONES = [
+      new Date('2026-09-08T00:00:00').getTime(), // 9 months left
+      new Date('2026-12-08T00:00:00').getTime(), // 6 months left
+      new Date('2027-03-08T00:00:00').getTime(), // 3 months left
+    ];
+
     const $days    = document.getElementById('days');
     const $hours   = document.getElementById('hours');
     const $minutes = document.getElementById('minutes');
     const $seconds = document.getElementById('seconds');
+    const $usedToggle = document.getElementById('usedToggle');
+    const $usedDays   = document.getElementById('usedDays');
+    const $milestone     = document.getElementById('milestone');
+    const $milestoneDays = document.getElementById('milestoneDays');
 
     const pad = (n, w) => String(Math.max(0, n)).padStart(w, '0');
 
     function render() {
-      const diff = TARGET - Date.now();
+      const now  = Date.now();
+      const diff = TARGET - now;
+
+      // Days used since the start of the year (clamped to the window).
+      const used = Math.min(365, Math.max(0, Math.floor((now - START) / DAY)));
+      $usedDays.textContent = pad(used, 3);
+
+      // Milestone overlay: active while now is within a 7-day window.
+      const active = MILESTONES.find(m => now >= m && now < m + WEEK);
+      if (active !== undefined && diff > 0) {
+        $milestoneDays.textContent = pad(Math.ceil(diff / DAY), 3);
+        $milestone.hidden = false;
+      } else {
+        $milestone.hidden = true;
+      }
+
       if (diff <= 0) {
         $days.textContent    = '000';
         $hours.textContent   = '00';
@@ -166,6 +272,12 @@
       $seconds.textContent = pad(Math.floor((diff % MIN)  / SEC),  2);
       return true;
     }
+
+    // Tap below the countdown to toggle the "days used" number on/off.
+    $usedToggle.addEventListener('click', () => {
+      const open = $usedToggle.classList.toggle('open');
+      $usedToggle.setAttribute('aria-expanded', String(open));
+    });
 
     render();
     const id = setInterval(() => { if (!render()) clearInterval(id); }, 1000);
