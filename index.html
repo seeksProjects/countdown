@@ -109,38 +109,37 @@
       color: var(--label);
     }
 
-    /* Milestone overlay — a full-width white banner pinned to the top
-       during its 7-day window. */
+    /* Milestone overlay — an iOS-notification-style pill that floats about
+       a third of the way down during its 7-day window. Full width minus
+       small side margins, rounded, with a drop shadow. */
     .milestone {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 24%;
+      left: max(12px, env(safe-area-inset-left));
+      right: max(12px, env(safe-area-inset-right));
       z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: clamp(2px, 0.8vw, 6px);
-      padding:
-        calc(max(12px, env(safe-area-inset-top)) + 6px)
-        16px
-        clamp(10px, 3vw, 16px);
-      background: rgba(244, 248, 255, 0.96);
-      box-shadow: 0 3px 22px rgba(0, 0, 0, 0.5);
-      animation: milestone-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      gap: clamp(2px, 0.8vw, 5px);
+      padding: clamp(9px, 2.4vw, 14px) clamp(16px, 5vw, 24px);
+      border-radius: 22px;
+      background: rgba(244, 248, 255, 0.97);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+      animation: milestone-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
     }
     .milestone[hidden] { display: none; }
 
+    /* Number — small (stacked above an even smaller caption). */
     .milestone-num {
       font-family: 'DSEG7', 'Courier New', monospace;
-      font-size: clamp(28px, 8vw, 60px);
+      font-size: clamp(17px, 4.6vw, 26px);
       line-height: 1;
       letter-spacing: 0.04em;
       color: #2b6cff;
-      text-shadow: 0 0 10px rgba(43, 108, 255, 0.25);
+      text-shadow: 0 0 8px rgba(43, 108, 255, 0.2);
     }
 
-    /* Caption — small, matching the "days used" caption. */
     .milestone-label {
       font-family: 'Courier New', monospace;
       font-size: clamp(8px, 2vw, 11px);
@@ -150,7 +149,7 @@
     }
 
     @keyframes milestone-in {
-      from { opacity: 0; transform: translateY(-100%); }
+      from { opacity: 0; transform: translateY(-16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
