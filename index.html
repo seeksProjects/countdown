@@ -146,34 +146,47 @@
     .used-toggle {
       margin-top: clamp(22px, 6vw, 48px);
       display: inline-flex;
-      align-items: baseline;
-      gap: 0.6em;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(3px, 1vw, 7px);
       background: none;
       border: 1px solid var(--dim);
-      border-radius: 999px;
-      padding: clamp(8px, 2.2vw, 12px) clamp(16px, 4vw, 24px);
+      border-radius: 16px;
+      padding: clamp(10px, 2.6vw, 14px) clamp(20px, 6vw, 32px);
       color: var(--label);
       font-family: 'Courier New', monospace;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: border-color 0.25s ease;
+      transition: border-color 0.3s ease, background 0.3s ease;
     }
     .used-toggle:active { border-color: var(--digit-glow); }
+    .used-toggle.open { border-color: rgba(43, 108, 255, 0.25); background: rgba(43, 108, 255, 0.04); }
 
+    /* Number (on top) always reserves its space; only opacity/transform
+       animate, so revealing it never shifts the countdown above. */
     .used-toggle .used-num {
       font-family: 'DSEG7', 'Courier New', monospace;
-      font-size: clamp(18px, 5vw, 30px);
+      font-size: clamp(20px, 6vw, 34px);
+      line-height: 1;
       letter-spacing: 0.04em;
       color: var(--digit);
       text-shadow: 0 0 8px var(--digit-glow), 0 0 20px var(--digit-glow);
+      opacity: 0;
+      transform: translateY(6px) scale(0.94);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
     }
+    .used-toggle.open .used-num {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    /* Caption (beneath the number) — a touch smaller. */
     .used-toggle .used-text {
-      font-size: clamp(10px, 2.4vw, 14px);
-      letter-spacing: 0.3em;
+      font-size: clamp(8px, 2vw, 11px);
+      letter-spacing: 0.32em;
       text-transform: uppercase;
+      transition: color 0.3s ease;
     }
-    /* Collapsed: number hidden; tap reveals it */
-    .used-toggle:not(.open) .used-num { display: none; }
+    .used-toggle.open .used-text { color: var(--digit); }
 
     @media (orientation: portrait) and (max-width: 520px) {
       .countdown { grid-template-columns: repeat(2, auto); }
@@ -242,6 +255,9 @@
 
     const pad = (n, w) => String(Math.max(0, n)).padStart(w, '0');
 
+    // Add ?preview to the URL to force the milestone overlay on (for design review).
+    const PREVIEW = new URLSearchParams(location.search).has('preview');
+
     function render() {
       const now  = Date.now();
       const diff = TARGET - now;
@@ -250,9 +266,9 @@
       const used = Math.min(365, Math.max(0, Math.floor((now - START) / DAY)));
       $usedDays.textContent = pad(used, 3);
 
-      // Milestone overlay: active while now is within a 7-day window.
+      // Milestone overlay: active while now is within a 7-day window (or in preview).
       const active = MILESTONES.find(m => now >= m && now < m + WEEK);
-      if (active !== undefined && diff > 0) {
+      if ((active !== undefined || PREVIEW) && diff > 0) {
         $milestoneDays.textContent = pad(Math.ceil(diff / DAY), 3);
         $milestone.hidden = false;
       } else {
